@@ -14,7 +14,7 @@ Sender::Sender(QObject *parent)
 
 QString filename(QString filepath){
     QString file_prefix{""};
-    for (auto i{filepath.length() - 1} ;filepath[i] != '.';--i ){
+    for (auto i{filepath.length() - 1} ;filepath[i] != '/';--i ){
         file_prefix += filepath[i];
     }
 
@@ -24,12 +24,9 @@ QString filename(QString filepath){
         file_prefix[file_prefix.length() - 1 - i] = tmp;
     }
 
-    QString dot {"."};
-    dot += file_prefix;
+    qDebug() << file_prefix;
 
-    qDebug() << dot;
-
-    return dot;
+    return file_prefix;
 }
 
 
