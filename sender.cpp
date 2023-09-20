@@ -34,8 +34,20 @@ QString filename(QString filepath){
 void Sender::finished(){
     QObject::connect(reply , &QNetworkReply::errorOccurred, this , &Sender::errorOccoured);
     emit connected();
-    emit sent();
+    //QByteArray smth = reply->readAll();
+    //qDebug() << QString(smth);
+    //if (QString(smth) == ""){
+    //    emit failed_error();
+    //}else{
+
+    //}
+
+    reply->deleteLater();
+
+    reply = nullptr;
+
     Restart();
+    emit sent();
 }
 
 void Sender::errorOccoured(){
@@ -52,12 +64,16 @@ bool Sender::start(QString file_path , QString HostIPv4){
     file.setFileName(QUrl(file_path).toLocalFile());
 
     bool could_open = file.open(QIODevice::ReadOnly);
-    QByteArray* file_info = new QByteArray;
+    QByteArray* fili = new QByteArray;
+    QByteArray& file_info = *fili;
 
     if (could_open){
-        *file_info = file.readAll();
+
+        file_info = file.readAll();
+        //qDebug() << file_info;
     }else{
-        delete file_info;
+        //delete file_info;
+        delete fili;
         emit file_notOpened();
         return true;
     }
@@ -72,16 +88,18 @@ bool Sender::start(QString file_path , QString HostIPv4){
     qDebug() << urlStarter;
 
     req.setUrl(QUrl(urlStarter));
-    auto connentType{"file" + filename(QUrl(file_path).toLocalFile())};
+    auto connentType{filename(QUrl(file_path).toLocalFile())};
     req.setHeader(QNetworkRequest::ContentTypeHeader , connentType);
 
-    QNetworkAccessManager* manager = new QNetworkAccessManager();
-    reply = manager->post(req , *file_info);
-    delete file_info;
+    manager = new QNetworkAccessManager(this);
+    qDebug() << file_info.length();
+    this->reply = manager->post(req , file_info);
+
+    // delete file_info;
 
     // checking the process
     QObject::connect(reply , &QNetworkReply::finished , this , &Sender::finished);
 
-
+    delete fili;
     return true;
 }

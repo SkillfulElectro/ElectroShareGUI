@@ -13,12 +13,8 @@ class Sender : public QObject
 public:
     explicit Sender(QObject *parent = nullptr);
     ~Sender(){
-        if (manager != nullptr){
-            delete manager;
-        }
-        if (reply != nullptr){
-            delete reply;
-        }
+
+        //manager = nullptr;
     }
 private:
     QFile file;
@@ -28,18 +24,15 @@ private:
     QString file_path ,
         HostIPv4;
 
-    void Restart(){
-        if (manager != nullptr){
-            delete manager;
-        }
-        if (reply != nullptr){
-            delete reply;
-        }
-    }
+
 private slots:
     void finished();
     void errorOccoured();
-    void ReadyRead();
+    void Restart(){
+
+        manager->deleteLater();
+        //manager = nullptr;
+    }
 public slots:
     bool start(QString , QString);
 signals:

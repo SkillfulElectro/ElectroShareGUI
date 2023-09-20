@@ -371,6 +371,7 @@ Window {
                     color : "white"
                     border.color: "black"
                     anchors.horizontalCenter: parent.horizontalCenter
+                    clip : true
 
 
                     TextInput{
@@ -411,6 +412,7 @@ Window {
                     border.color: "black"
                     anchors.horizontalCenter: parent.horizontalCenter
 
+                    clip : true
                     TextInput{
                         id : send_ipv4_field
                         anchors.fill: parent
@@ -531,6 +533,7 @@ Window {
                     border.color: "black"
                     anchors.horizontalCenter: parent.horizontalCenter
 
+                    clip : true
 
                     TextInput{
                         id : recive_path_field

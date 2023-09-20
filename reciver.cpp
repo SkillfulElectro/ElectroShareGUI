@@ -42,13 +42,15 @@ QString extractName(QByteArray& full){
 void Reciver::NewConnection(){
     Sender = Recive->nextPendingConnection();
     QObject::connect(Sender , &QTcpSocket::readyRead , this , &Reciver::ReadyRead);
+    //qDebug() << Sender->size();
     emit reciving();
 }
 
 void Reciver::ReadyRead(){
-    QByteArray* file_info{new QByteArray};
-    *file_info = Sender->readAll();
-    qDebug() << *file_info;
+    auto size {Sender->size()};
+    QByteArray* file_info{new QByteArray(Sender->readAll())};
+    qDebug() << size;
+    //qDebug() << *file_info;
     QString filename{extractName(*file_info)};
     QByteArray* filewrite{new QByteArray};
 
@@ -87,6 +89,7 @@ void Reciver::ReadyRead(){
     Sender->write(response);
 
     Sender->close();
+    Sender->deleteLater();
 
     emit recived();
     Restart();

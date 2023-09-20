@@ -20,9 +20,8 @@ private:
         if (Recive != nullptr){
             delete Recive;
         }
-        if (Sender != nullptr){
-            delete Sender;
-        }
+        Recive = new QTcpServer(this);
+        QObject::connect(Recive , &QTcpServer::newConnection , this , &Reciver::NewConnection);
     }
 private slots:
     void NewConnection();
@@ -33,9 +32,6 @@ public:
     ~Reciver(){
         if (Recive != nullptr){
             delete Recive;
-        }
-        if (Sender != nullptr){
-            delete Sender;
         }
     }
 
