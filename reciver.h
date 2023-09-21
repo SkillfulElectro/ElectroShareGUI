@@ -17,11 +17,8 @@ private:
     QString save_path;
 
     void Restart(){
-        if (Recive != nullptr){
-            delete Recive;
-        }
-        Recive = new QTcpServer(this);
-        QObject::connect(Recive , &QTcpServer::newConnection , this , &Reciver::NewConnection);
+
+
     }
 private slots:
     void NewConnection();
@@ -32,6 +29,11 @@ public:
     ~Reciver(){
         if (Recive != nullptr){
             delete Recive;
+        }
+
+        if (Sender != nullptr){
+            Sender->close();
+            Sender->deleteLater();
         }
     }
 

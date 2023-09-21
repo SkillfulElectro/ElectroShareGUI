@@ -8,23 +8,27 @@
 Reciver::Reciver(QObject *parent)
     : QObject{parent}
 {
-    Recive = new QTcpServer(this);
-    QObject::connect(Recive , &QTcpServer::newConnection , this , &Reciver::NewConnection);
+    Recive = nullptr
+        , Sender = nullptr;
 }
 
 QString extractName(QByteArray& full){
+
     int count{0};
-    int index_name{0};
+    qsizetype index_name{0};
     for (;count != 2;++index_name){
+        qDebug() << index_name;
         if (full[index_name] == '\n'){
             ++count;
         }
     }
+    //qDebug() << index_name;
 
     ++index_name;
     for (;full[index_name] != ' ';++index_name);
     QString name{""};
     for (;full[index_name] != '\r';++index_name){
+        //qDebug() << index_name;
         name += full[index_name];
     }
 
@@ -46,26 +50,102 @@ void Reciver::NewConnection(){
     emit reciving();
 }
 
+bool nameGotten{false};
+
 void Reciver::ReadyRead(){
-    auto size {Sender->size()};
-    QByteArray* file_info{new QByteArray(Sender->readAll())};
-    qDebug() << size;
-    //qDebug() << *file_info;
-    QString filename{extractName(*file_info)};
+    /*debugger
+    QByteArray* smth {new QByteArray(Sender->readAll())};
+
+
+    qDebug() << *smth;
+    delete smth;
+    */
+
+    //qDebug() << Sender->readAll();
+    //QByteArray* file_info{new QByteArray(Sender->readAll())};
+    //qDebug() << Sender->size();
+    if (!nameGotten){
+        QByteArray first_time {Sender->readAll()};
+        QString filename{extractName(first_time)};
+        save_path += '/' + filename;
+        nameGotten = !nameGotten;
+
+        QFile file(save_path);
+        bool file_made = file.open(QIODevice::Append);
+        if (!file_made){
+            file.close();
+            //delete filewrite;
+            //delete file;
+            //delete file_info;
+            emit file_failed();
+            return;
+        }
+
+        QString requestString(first_time);
+
+        QByteArray toFile;
+        int bodyStartIndex = requestString.indexOf("\r\n\r\n") + 4;
+        for (;bodyStartIndex != first_time.length();++bodyStartIndex){
+            toFile.append((first_time)[bodyStartIndex]);
+        }
+
+        file.write(toFile);
+        file.close();
+    }else{
+
+        QFile file(save_path);
+
+        bool file_made = file.open(QIODevice::Append);
+        if (!file_made){
+            file.close();
+            //delete filewrite;
+            //delete file;
+            //delete file_info;
+            emit file_failed();
+            return;
+        }
+
+        file.write(Sender->readAll());
+
+        file.close();
+        //delete filewrite;
+        //delete file;
+        //delete file_info;
+        QByteArray response;
+        response.append("HTTP/1.1 200 OK\r\n"); // status line
+        response.append("Content-Type: text/plain\r\n"); // header
+        response.append("\r\n"); // blank line
+        response.append("done"); // body
+        Sender->write(response);
+    }
+
+
+    //emit recived();
+
+    /*
     QByteArray* filewrite{new QByteArray};
 
+    //qDebug() << *file_info;
 
-    QString requestString(*file_info);
-    int bodyStartIndex = requestString.indexOf("\r\n\r\n") + 4;
-    for (;bodyStartIndex != file_info->length();++bodyStartIndex){
-        filewrite->append((*file_info)[bodyStartIndex]);
+    QFile file(path);
+    if (!nameGotten){
+        filename = extractName(*file_info);
+        nameGotten = !nameGotten;
+        QString requestString(*file_info);
+        int bodyStartIndex = requestString.indexOf("\r\n\r\n") + 4;
+        for (;bodyStartIndex != file_info->length();++bodyStartIndex){
+            filewrite->append((*file_info)[bodyStartIndex]);
+        }
+        path = save_path + '/' + filename;
+    }else{
+        filewrite->append(*file_info);
     }
 
     //filename = "amesen.txt";
-    auto path = save_path + '/' + filename;
+
     //qDebug () << path;
-    QFile file(path);
-    bool file_made = file.open(QIODevice::WriteOnly);
+
+    bool file_made = file.open(QIODevice::Append);
     if (!file_made){
         file.close();
         delete filewrite;
@@ -88,14 +168,29 @@ void Reciver::ReadyRead(){
     response.append("done"); // body
     Sender->write(response);
 
-    Sender->close();
-    Sender->deleteLater();
+
 
     emit recived();
-    Restart();
+*/
 }
 
 void Reciver::start(QString save_path){
+    if(nameGotten){
+        nameGotten = !nameGotten;
+    }
+    if (Sender != nullptr){
+        Sender->close();
+        Sender->deleteLater();
+    }
+    if (Recive != nullptr){
+        delete Recive;
+        Recive = new QTcpServer(this);
+        QObject::connect(Recive , &QTcpServer::newConnection , this , &Reciver::NewConnection);
+    }else{
+        Recive = new QTcpServer(this);
+        QObject::connect(Recive , &QTcpServer::newConnection , this , &Reciver::NewConnection);
+    }
+
     //qDebug() << save_path << this->save_path;
     this->save_path = QUrl(save_path).toLocalFile();
     QUdpSocket socket;

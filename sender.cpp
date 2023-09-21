@@ -34,13 +34,13 @@ QString filename(QString filepath){
 void Sender::finished(){
     QObject::connect(reply , &QNetworkReply::errorOccurred, this , &Sender::errorOccoured);
     emit connected();
-    //QByteArray smth = reply->readAll();
-    //qDebug() << QString(smth);
-    //if (QString(smth) == ""){
-    //    emit failed_error();
-    //}else{
-
-    //}
+    QByteArray smth = reply->readAll();
+    qDebug() << QString(smth);
+    if (QString(smth) == ""){
+        emit failed_error();
+        Restart();
+        return;
+    }
 
     reply->deleteLater();
 
