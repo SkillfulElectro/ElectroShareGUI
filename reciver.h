@@ -16,6 +16,7 @@ private:
     QTcpSocket* Sender{nullptr};
     QString save_path;
 
+
     void Restart(){
 
 

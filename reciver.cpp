@@ -11,13 +11,15 @@ Reciver::Reciver(QObject *parent)
     Recive = nullptr
         , Sender = nullptr;
 }
+QString file_len{""};
+qsizetype file_len_int{0};
 
 QString extractName(QByteArray& full){
 
     int count{0};
     qsizetype index_name{0};
     for (;count != 2;++index_name){
-        qDebug() << index_name;
+        //qDebug() << index_name;
         if (full[index_name] == '\n'){
             ++count;
         }
@@ -32,6 +34,16 @@ QString extractName(QByteArray& full){
         name += full[index_name];
     }
 
+    index_name += 18;
+
+    for (;full[index_name] != '\r';++index_name){
+        file_len += full[index_name];
+    }
+
+    //qDebug() << file_len;
+    bool ok;
+    file_len_int += qsizetype(file_len.toInt(&ok));
+    //qDebug() << file_len_int;
     /*
     for (int i{0};i<name.length()/2;++i){
         auto tmp = name[i];
@@ -65,11 +77,13 @@ void Reciver::ReadyRead(){
     //QByteArray* file_info{new QByteArray(Sender->readAll())};
     //qDebug() << Sender->size();
     if (!nameGotten){
+        file_len_int -= Sender->size();
         QByteArray first_time {Sender->readAll()};
         QString filename{extractName(first_time)};
+
         save_path += '/' + filename;
         nameGotten = !nameGotten;
-
+        //qDebug() << first_time;
         QFile file(save_path);
         bool file_made = file.open(QIODevice::Append);
         if (!file_made){
@@ -91,8 +105,14 @@ void Reciver::ReadyRead(){
 
         file.write(toFile);
         file.close();
-    }else{
 
+        if (file_len_int == 0){
+            emit recived();
+            return;
+        }
+    }else{
+        file_len_int -= Sender->size();
+        //qDebug() << Sender->size();
         QFile file(save_path);
 
         bool file_made = file.open(QIODevice::Append);
@@ -108,16 +128,23 @@ void Reciver::ReadyRead(){
         file.write(Sender->readAll());
 
         file.close();
-        //delete filewrite;
-        //delete file;
-        //delete file_info;
-        QByteArray response;
-        response.append("HTTP/1.1 200 OK\r\n"); // status line
-        response.append("Content-Type: text/plain\r\n"); // header
-        response.append("\r\n"); // blank line
-        response.append("done"); // body
-        Sender->write(response);
+        //qDebug() << file_len_int;
+        if (file_len_int <= 0){
+            QByteArray response;
+            response.append("HTTP/1.1 200 OK\r\n"); // status line
+            response.append("Content-Type: text/plain\r\n"); // header
+            response.append("\r\n"); // blank line
+            response.append("done"); // body
+            Sender->write(response);
+            Sender->close();
+            emit recived();
+            return;
+        }
     }
+
+    //delete filewrite;
+    //delete file;
+    //delete file_info;
 
 
     //emit recived();
