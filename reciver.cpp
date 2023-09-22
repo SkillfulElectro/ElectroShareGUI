@@ -11,6 +11,7 @@ Reciver::Reciver(QObject *parent)
     Recive = nullptr
         , Sender = nullptr;
 }
+
 QString file_len{""};
 qsizetype file_len_int{0};
 
@@ -19,18 +20,17 @@ QString extractName(QByteArray& full){
     int count{0};
     qsizetype index_name{0};
     for (;count != 2;++index_name){
-        //qDebug() << index_name;
+
+
         if (full[index_name] == '\n'){
             ++count;
         }
     }
-    //qDebug() << index_name;
 
     ++index_name;
     for (;full[index_name] != ' ';++index_name);
     QString name{""};
     for (;full[index_name] != '\r';++index_name){
-        //qDebug() << index_name;
         name += full[index_name];
     }
 
@@ -40,17 +40,8 @@ QString extractName(QByteArray& full){
         file_len += full[index_name];
     }
 
-    //qDebug() << file_len;
     bool ok;
     file_len_int += qsizetype(file_len.toInt(&ok));
-    //qDebug() << file_len_int;
-    /*
-    for (int i{0};i<name.length()/2;++i){
-        auto tmp = name[i];
-        name[i] = name[name.length() - 1 - i];
-        name[name.length() - 1 - i] = tmp;
-    }
-    */
 
     return name;
 }
@@ -58,24 +49,13 @@ QString extractName(QByteArray& full){
 void Reciver::NewConnection(){
     Sender = Recive->nextPendingConnection();
     QObject::connect(Sender , &QTcpSocket::readyRead , this , &Reciver::ReadyRead);
-    //qDebug() << Sender->size();
     emit reciving();
 }
 
 bool nameGotten{false};
 
 void Reciver::ReadyRead(){
-    /*debugger
-    QByteArray* smth {new QByteArray(Sender->readAll())};
 
-
-    qDebug() << *smth;
-    delete smth;
-    */
-
-    //qDebug() << Sender->readAll();
-    //QByteArray* file_info{new QByteArray(Sender->readAll())};
-    //qDebug() << Sender->size();
     if (!nameGotten){
         file_len_int -= Sender->size();
         QByteArray first_time {Sender->readAll()};
@@ -83,14 +63,11 @@ void Reciver::ReadyRead(){
 
         save_path += '/' + filename;
         nameGotten = !nameGotten;
-        //qDebug() << first_time;
         QFile file(save_path);
         bool file_made = file.open(QIODevice::Append);
         if (!file_made){
             file.close();
-            //delete filewrite;
-            //delete file;
-            //delete file_info;
+
             emit file_failed();
             return;
         }
@@ -112,15 +89,12 @@ void Reciver::ReadyRead(){
         }
     }else{
         file_len_int -= Sender->size();
-        //qDebug() << Sender->size();
         QFile file(save_path);
 
         bool file_made = file.open(QIODevice::Append);
         if (!file_made){
             file.close();
-            //delete filewrite;
-            //delete file;
-            //delete file_info;
+
             emit file_failed();
             return;
         }
@@ -128,7 +102,6 @@ void Reciver::ReadyRead(){
         file.write(Sender->readAll());
 
         file.close();
-        //qDebug() << file_len_int;
         if (file_len_int <= 0){
             QByteArray response;
             response.append("HTTP/1.1 200 OK\r\n"); // status line
@@ -142,14 +115,59 @@ void Reciver::ReadyRead(){
         }
     }
 
-    //delete filewrite;
-    //delete file;
-    //delete file_info;
+
+}
+
+void Reciver::start(QString save_path){
+    if(nameGotten){
+        nameGotten = !nameGotten;
+    }
+    if (Sender != nullptr){
+        Sender->close();
+        Sender->deleteLater();
+    }
+    if (Recive != nullptr){
+        delete Recive;
+        Recive = new QTcpServer(this);
+        QObject::connect(Recive , &QTcpServer::newConnection , this , &Reciver::NewConnection);
+    }else{
+        Recive = new QTcpServer(this);
+        QObject::connect(Recive , &QTcpServer::newConnection , this , &Reciver::NewConnection);
+    }
+
+    this->save_path = QUrl(save_path).toLocalFile();
+    QUdpSocket socket;
+    socket.connectToHost("8.8.8.8", 80); // google DNS, or something else reliable for getting local IPv4
+    auto IPv4 = socket.localAddress().toString();
+    qDebug() << IPv4;
+    socket.close();
+    emit ipv(IPv4);
+
+    bool is_ready{
+        Recive->listen(QHostAddress(IPv4) , 9090)
+    };
+
+    if (is_ready){
+        emit recive_active();
+    }else{
+        delete Recive;
+        emit recive_failed_active();
+        return;
+    }
+}
+
+/// Garbage dump:
+///
+///
+///     //qDebug() << save_path << this->save_path;
+///     //delete filewrite;
+//delete file;
+//delete file_info;
 
 
-    //emit recived();
+//emit recived();
 
-    /*
+/*
     QByteArray* filewrite{new QByteArray};
 
     //qDebug() << *file_info;
@@ -199,43 +217,40 @@ void Reciver::ReadyRead(){
 
     emit recived();
 */
-}
+//delete filewrite;
+//delete file;
+//delete file_info;
+//qDebug() << file_len_int;
+//qDebug() << Sender->size();
+//delete filewrite;
+//delete file;
+//delete file_info;
+//qDebug() << first_time;
+/*debugger
+    QByteArray* smth {new QByteArray(Sender->readAll())};
 
-void Reciver::start(QString save_path){
-    if(nameGotten){
-        nameGotten = !nameGotten;
-    }
-    if (Sender != nullptr){
-        Sender->close();
-        Sender->deleteLater();
-    }
-    if (Recive != nullptr){
-        delete Recive;
-        Recive = new QTcpServer(this);
-        QObject::connect(Recive , &QTcpServer::newConnection , this , &Reciver::NewConnection);
-    }else{
-        Recive = new QTcpServer(this);
-        QObject::connect(Recive , &QTcpServer::newConnection , this , &Reciver::NewConnection);
-    }
 
-    //qDebug() << save_path << this->save_path;
-    this->save_path = QUrl(save_path).toLocalFile();
-    QUdpSocket socket;
-    socket.connectToHost("8.8.8.8", 80); // google DNS, or something else reliable for getting local IPv4
-    auto IPv4 = socket.localAddress().toString();
-    qDebug() << IPv4;
-    socket.close();
-    emit ipv(IPv4);
+    qDebug() << *smth;
+    delete smth;
+    */
 
-    bool is_ready{
-        Recive->listen(QHostAddress(IPv4) , 9090)
-    };
-
-    if (is_ready){
-        emit recive_active();
-    }else{
-        delete Recive;
-        emit recive_failed_active();
-        return;
+//qDebug() << Sender->readAll();
+//QByteArray* file_info{new QByteArray(Sender->readAll())};
+//qDebug() << Sender->size();
+//qDebug() << file_len_int;
+/*
+    for (int i{0};i<name.length()/2;++i){
+        auto tmp = name[i];
+        name[i] = name[name.length() - 1 - i];
+        name[name.length() - 1 - i] = tmp;
     }
-}
+    */
+//qDebug() << Sender->size();
+//qDebug() << file_len;
+//qDebug() << index_name;
+//qDebug() << index_name;
+//qDebug() << index_name;
+
+
+
+

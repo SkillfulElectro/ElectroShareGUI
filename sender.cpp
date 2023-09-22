@@ -70,9 +70,8 @@ bool Sender::start(QString file_path , QString HostIPv4){
     if (could_open){
 
         file_info = file.readAll();
-        //qDebug() << file_info;
     }else{
-        //delete file_info;
+
         delete fili;
         emit file_notOpened();
         return true;
@@ -95,11 +94,21 @@ bool Sender::start(QString file_path , QString HostIPv4){
     qDebug() << file_info.length();
     this->reply = manager->post(req , file_info);
 
-    // delete file_info;
 
-    // checking the process
     QObject::connect(reply , &QNetworkReply::finished , this , &Sender::finished);
 
     delete fili;
     return true;
 }
+
+/// Garbage dump :
+///
+///
+/**
+ *     // delete file_info;
+
+    // checking the process
+ //delete file_info;
+        //qDebug() << file_info;
+
+*/

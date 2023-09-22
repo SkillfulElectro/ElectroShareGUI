@@ -13,8 +13,10 @@ class Sender : public QObject
 public:
     explicit Sender(QObject *parent = nullptr);
     ~Sender(){
-
-        //manager = nullptr;
+        if (manager != nullptr){
+            manager->deleteLater();
+            manager = nullptr;
+        }
     }
 private:
     QFile file;
@@ -29,9 +31,8 @@ private slots:
     void finished();
     void errorOccoured();
     void Restart(){
-
         manager->deleteLater();
-        //manager = nullptr;
+        manager = nullptr;
     }
 public slots:
     bool start(QString , QString);
@@ -43,3 +44,9 @@ signals:
 };
 
 #endif // SENDER_H
+
+/// Garbage dump:
+///
+///
+/// //manager = nullptr;
+/// //manager = nullptr;
