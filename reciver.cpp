@@ -83,7 +83,14 @@ void Reciver::ReadyRead(){
         file.write(toFile);
         file.close();
 
-        if (file_len_int == 0){
+        if (file_len_int <= 0){
+            QByteArray response;
+            response.append("HTTP/1.1 200 OK\r\n"); // status line
+            response.append("Content-Type: text/plain\r\n"); // header
+            response.append("\r\n"); // blank line
+            response.append("done"); // body
+            Sender->write(response);
+            Sender->close();
             emit recived();
             return;
         }
